@@ -1,0 +1,33 @@
+def heuristic(state):
+    return 0
+
+def is_terminal(state, depth):
+    return state == goal_state or depth == 0
+
+def generate_children(state, maximizing):
+    pass
+
+def alphabeta(state, depth, alpha, beta, maximizing_player):
+    if is_terminal(state, depth):
+        return heuristic(state)
+    if maximizing_player:
+        value = float('-inf')
+        for child in generate_children(state, True):
+            value = max(value, alphabeta(child, depth-1, alpha, beta, False))
+            alpha = max(alpha, value)
+            if alpha >= beta:
+                break
+        return value
+    else:
+        value = float('inf')
+        for child in generate_children(state, False):
+            value = min(value, alphabeta(child, depth-1, alpha, beta, True))
+            beta = min(beta, value)
+            if beta <= alpha:
+                break
+        return value
+
+initial = [1, 2, 3, 4, 0, 5, 6, 7, 8]
+goal_state = [1, 2, 3, 4, 5, 6, 7, 8, 0]
+best_value = alphabeta(initial, depth=5, alpha=float('-inf'), beta=float('inf'), maximizing_player=True)
+print("Best value from root:", best_value)
