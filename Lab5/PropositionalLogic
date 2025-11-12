@@ -1,0 +1,37 @@
+from itertools import product
+
+def extract_symbols(sentences):
+    symbols=set()
+    for s in sentences:
+        for ch in s:
+            if ch.isalpha():
+                symbols.add(ch)
+    return sorted(symbols)
+
+def eval_sentence(sentence, model):
+    s=sentence
+    for sym,val in model.items():
+        s=s.replace(sym,str(val))
+    s=s.replace('~',' not ').replace('&',' and ').replace('|',' or ').replace('=>',' <= ')
+    return eval(s)
+
+def tt_entails(kb,query):
+    symbols=extract_symbols(kb+[query])
+    for values in product([False,True],repeat=len(symbols)):
+        model=dict(zip(symbols,values))
+        if all(eval_sentence(s,model) for s in kb):
+            if not eval_sentence(query,model):
+                return False
+    return True
+
+FB_sentences=[]
+n=int(input("Enter number of KB sentences: "))
+for _ in range(n):
+    FB_sentences.append(input("Enter sentence: "))
+
+query=input("Enter query: ")
+
+if tt_entails(FB_sentences,query):
+    print("KB entails query.")
+else:
+    print("KB does NOT entail query.")
