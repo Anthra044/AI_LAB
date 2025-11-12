@@ -1,0 +1,40 @@
+import random
+import time
+
+env = [[random.choice(['Clean','Dirty']) for _ in range(2)] for _ in range(2)]
+agent_pos = [0,0]
+
+def display():
+    for i in range(2):
+        for j in range(2):
+            if [i,j]==agent_pos:
+                print('🤖',end=' ')
+            else:
+                print('D' if env[i][j]=='Dirty' else 'C',end=' ')
+        print()
+    print()
+
+def all_clean():
+    return all(env[i][j]=='Clean' for i in range(2) for j in range(2))
+
+def ai_agent():
+    global agent_pos
+    while not all_clean():
+        i,j=agent_pos
+        display()
+        if env[i][j]=='Dirty':
+            env[i][j]='Clean'
+            print(f"Cleaned {i},{j}\n")
+        else:
+            moves=[(0,1),(1,0),(0,-1),(-1,0)]
+            random.shuffle(moves)
+            for dx,dy in moves:
+                ni,nj=i+dx,j+dy
+                if 0<=ni<2 and 0<=nj<2:
+                    agent_pos=[ni,nj]
+                    break
+        time.sleep(1)
+    display()
+    print("All quadrants clean!")
+
+ai_agent()
