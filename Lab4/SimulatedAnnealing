@@ -1,0 +1,22 @@
+import random,math
+
+def conflict(s):
+    return sum(abs(s[i]-s[j])==abs(i-j) or s[i]==s[j] for i in range(len(s)) for j in range(i))
+
+def neighbor(s):
+    n=s[:]
+    i=random.randint(0,3)
+    n[i]=random.randint(0,3)
+    return n
+
+def simulated_annealing():
+    s=[random.randint(0,3) for _ in range(4)]
+    T=1.0
+    while conflict(s)>0 and T>1e-3:
+        n=neighbor(s)
+        d=conflict(n)-conflict(s)
+        if d<0 or random.random()<math.exp(-d/T): s=n
+        T*=0.99
+    return s
+
+print(simulated_annealing())
