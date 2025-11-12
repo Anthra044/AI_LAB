@@ -1,0 +1,20 @@
+import random
+
+def conflict(s):
+    return sum(abs(s[i]-s[j])==abs(i-j) or s[i]==s[j] for i in range(len(s)) for j in range(i))
+
+def hill_climb():
+    s=[random.randint(0,3) for _ in range(4)]
+    while True:
+        neighbors=[]
+        for i in range(4):
+            for j in range(4):
+                if s[i]!=j:
+                    n=s[:]
+                    n[i]=j
+                    neighbors.append(n)
+        best=min(neighbors,key=conflict)
+        if conflict(best)>=conflict(s): return s
+        s=best
+
+print(hill_climb())
