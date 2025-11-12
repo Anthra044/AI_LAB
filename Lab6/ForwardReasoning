@@ -1,0 +1,138 @@
+import copy
+
+def is_variable(x):
+    return isinstance(x, str) and x[0].islower()
+
+def occurs_check(var, x, subs):
+    if var == x:
+        return True
+    elif isinstance(x, list):
+        return any(occurs_check(var, xi, subs) for xi in x)
+    elif x in subs:
+        return occurs_check(var, subs[x], subs)
+    return False
+
+def unify_var(var, x, subs):
+    if var in subs:
+        return unify(subs[var], x, subs)
+    elif x in subs:
+        return unify(var, subs[x], subs)
+    elif occurs_check(var, x, subs):
+        return None
+    else:
+        subs[var] = x
+        return subs
+
+def unify(x, y, subs=None):
+    if subs is None:
+        subs = {}
+    if x == y:
+        return subs
+    elif is_variable(x):
+        return unify_var(x, y, subs)
+    elif is_variable(y):
+        return unify_var(y, x, subs)
+    elif isinstance(x, list) and isinstance(y, list) and len(x) == len(y):
+        for xi, yi in zip(x, y):
+            subs = unify(xi, yi, subs)
+            if subs is None:
+                return None
+        return subs
+    else:
+        return None
+
+class Rule:
+    def __init__(self, premises, conclusion):
+        self.premises = premises  # list of atomic formulas
+        self.conclusion = conclusion
+
+    def standardize_variables(self, counter):
+        mapping = {}
+        new_premises = []
+        for p in self.premises:
+            new_premises.append(self._replace_vars(p, mapping, counter))
+        new_conclusion = self._replace_vars(self.conclusion, mapping, counter)
+        return Rule(new_premises, new_conclusion)
+
+    def _replace_vars(self, term, mapping, counter):
+        if is_variable(term):
+            if term not in mapping:
+                mapping[term] = f"{term}_{next(counter)}"
+            return mapping[term]
+        elif isinstance(term, list):
+            return [self._replace_vars(t, mapping, counter) for t in term]
+        else:
+            return term
+
+
+class FOL_KB:
+    def __init__(self):
+        self.facts = []
+        self.rules = []
+
+    def tell_fact(self, fact):
+        if fact not in self.facts:
+            self.facts.append(fact)
+
+    def tell_rule(self, rule):
+        self.rules.append(rule)
+
+    def fetch_facts(self, predicate):
+        return [f for f in self.facts if f[0] == predicate]
+
+
+def FOL_FC_ASK(KB, query):
+    from itertools import count
+    counter = count(0)
+    new = set()
+
+    while True:
+        n_inferred = len(KB.facts)
+        for rule in KB.rules:
+            rule_std = rule.standardize_variables(counter)
+            for theta in match_premises(rule_std.premises, KB):
+                q_prime = substitute(theta, rule_std.conclusion)
+                if q_prime not in KB.facts:
+                    KB.tell_fact(q_prime)
+                    new.add(tuple(map(str, q_prime)))
+                    theta2 = unify(q_prime, query)
+                    if theta2 is not None:
+                        return theta2
+        if len(KB.facts) == n_inferred:
+            return False
+
+
+def match_premises(premises, KB):
+    if not premises:
+        return [{}]
+    first, *rest = premises
+    result = []
+    for fact in KB.fetch_facts(first[0]):
+        theta = unify(first, fact)
+        if theta is not None:
+            for theta_rest in match_premises([substitute(theta, r) for r in rest], KB):
+                new_theta = {**theta, **theta_rest}
+                result.append(new_theta)
+    return result
+
+
+def substitute(subs, x):
+    if isinstance(x, list):
+        return [substitute(subs, xi) for xi in x]
+    elif x in subs:
+        return subs[x]
+    else:
+        return x
+
+
+KB = FOL_KB()
+KB.tell_fact(["Human", "Socrates"])
+KB.tell_rule(Rule([["Human", "x"]], ["Mortal", "x"]))
+
+query = ["Mortal", "Socrates"]
+result = FOL_FC_ASK(KB, query)
+
+print("Entailment Result:", result)
+print("All Derived Facts:")
+for f in KB.facts:
+    print(" •", f)
